@@ -12,6 +12,13 @@
 #include <modbus.h>
 
 #define SERVER_ID 1
+#define SERIAL_PORT "/dev/ttyAMA0"
+#define BAUD_RATE 19200
+#define PARITY 'N'
+#define BYTE_SIZE 8
+#define STOP_BITS 1
+
+#define RPI_PIN 18
 
 int main(int argc, char *argv[])
 {
@@ -22,7 +29,7 @@ int main(int argc, char *argv[])
     int i;
     int rc;
     int nb_points = 1;
-    ctx = modbus_new_rtu("/dev/ttyAMA0", 19200, 'N', 8, 1);
+    ctx = modbus_new_rtu(SERIAL_PORT, BAUD_RATE, PARITY, BYTE_SIZE, STOP_BITS);
     if (ctx == NULL) {
         fprintf(stderr, "Unable to allocate libmodbus context\n");
         return -1;
@@ -31,6 +38,11 @@ int main(int argc, char *argv[])
     modbus_set_error_recovery(ctx, MODBUS_ERROR_RECOVERY_LINK | MODBUS_ERROR_RECOVERY_PROTOCOL);
     modbus_set_slave(ctx, SERVER_ID);
     modbus_get_response_timeout(ctx, &sec_to, &usec_to);
+    modbus_enable_rpi(ctx,TRUE);
+    modbus_configure_rpi_bcm_pin(ctx,RPI_PIN);
+    modbus_rpi_pin_export_direction(ctx);
+
+
     //modbus_get_response_timeout(ctx, &old_response_to_sec, &old_response_to_usec);
     if (modbus_connect(ctx) == -1)
     {
@@ -47,6 +59,7 @@ int main(int argc, char *argv[])
     free(tab_rp_registers);
 
     /* Close the connection */
+    modbus_rpi_pin_unexport_direction(ctx);
     modbus_close(ctx);
     modbus_free(ctx);
 }
